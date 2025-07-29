@@ -1,48 +1,58 @@
-name: Actualizar Key Automáticamente
+name: 🔄 Actualizar Key Automática
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # Chequea cada 10 minutos
-  workflow_dispatch:  # Permite ejecución manual
+    - cron: '* * * * *'  # Ejecuta cada minuto
+  workflow_dispatch:     # Permite ejecución manual
 
 jobs:
-  monitor-key:
+  check-and-update:
     runs-on: ubuntu-latest
+    timeout-minutes: 2   # Para evitar jobs largos
+
     steps:
-      - name: Checkout repo
+      - name: 🛎️ Checkout del repositorio
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necesario para hacer push
 
-      - name: Obtener HTML de la página
+      - name: 🌐 Obtener HTML de la página
         run: |
-          curl -s https://lilwero20.github.io/kesfagd/ > page.html
+          curl -s "https://lilwero20.github.io/kesfagd/" > page.html
+          echo "Página descargada $(ls -lh page.html)"
 
-      - name: Extraer key del HTML
-        id: extract-key
+      - name: 🔍 Extraer key del HTML
+        id: extract
         run: |
           KEY=$(grep -oP 'WERO-\w{12}' page.html | head -1)
-          echo "KEY_ENCONTRADA=$KEY" >> $GITHUB_ENV
-          echo "Key extraída: $KEY"
+          echo "Nueva key: $KEY"
+          echo "KEY=${KEY}" >> $GITHUB_ENV
 
-      - name: Actualizar key.txt si es diferente
+      - name: 💾 Comparar y actualizar key.txt
         run: |
+          # Leer key actual
           if [ -f "key.txt" ]; then
-            CURRENT_KEY=$(cat key.txt)
+            OLD_KEY=$(cat key.txt)
+            echo "Key actual: $OLD_KEY"
           else
-            CURRENT_KEY=""
+            OLD_KEY=""
+            echo "No existe key.txt"
           fi
 
-          if [ "$CURRENT_KEY" != "$KEY_ENCONTRADA" ]; then
-            echo "$KEY_ENCONTRADA" > key.txt
-            echo "✅ Key actualizada a: $KEY_ENCONTRADA"
-            
+          # Comparar keys
+          if [ "$OLD_KEY" != "$KEY" ]; then
+            echo "$KEY" > key.txt
+            echo "🔄 Actualizando key.txt a: $KEY"
+
             # Configurar Git
             git config --global user.name "GitHub Actions"
             git config --global user.email "actions@github.com"
-            
-            # Hacer commit
+
+            # Commit y push
             git add key.txt
-            git commit -m "🔄 Actualización automática de key: $KEY_ENCONTRADA"
+            git commit -m "🔄 Key actualizada: $KEY"
             git push
+            echo "✅ Key actualizada con éxito"
           else
-            echo "🔄 La key no ha cambiado"
+            echo "⏩ Key sin cambios"
           fi
