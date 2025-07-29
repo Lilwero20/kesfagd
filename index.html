@@ -3,108 +3,285 @@
 <head>
   <meta charset="UTF-8">
   <title>Generador de Claves WERO</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap');
+    
+    :root {
+      --primary: #9b59b6;
+      --dark: #1a1a1a;
+      --darker: #121212;
+      --light: #ecf0f1;
+      --gray: #2c3e50;
+    }
+    
     body {
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--darker);
+      color: var(--light);
       margin: 0;
-      background-color: #000;
-      color: #fff;
-      font-family: 'Segoe UI', sans-serif;
+      padding: 0;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 25% 25%, rgba(155, 89, 182, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(155, 89, 182, 0.1) 0%, transparent 50%);
     }
-    .box {
-      background-color: #222;
-      padding: 30px;
-      border-radius: 16px;
+    
+    .container {
+      width: 100%;
+      max-width: 500px;
+      padding: 2rem;
       text-align: center;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 0 20px #9b59b6;
     }
-    .key {
-      font-size: 1.2em;
-      font-weight: bold;
-      background-color: #333;
-      padding: 15px;
+    
+    .card {
+      background: linear-gradient(145deg, var(--dark), #151515);
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(155, 89, 182, 0.1) 0%, transparent 70%);
+      z-index: 0;
+    }
+    
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+      font-size: 1.8rem;
+      text-shadow: 0 0 10px rgba(155, 89, 182, 0.4);
+      position: relative;
+    }
+    
+    .key-display {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 3px;
+      color: var(--primary);
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background-color: rgba(0, 0, 0, 0.3);
       border-radius: 8px;
-      word-break: break-word;
-      margin: 20px 0;
-      color: #9b59b6;
+      border: 1px solid var(--primary);
+      box-shadow: 0 0 15px rgba(155, 89, 182, 0.3);
+      position: relative;
+      transition: all 0.3s ease;
     }
+    
+    .key-display:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 20px rgba(155, 89, 182, 0.5);
+    }
+    
     .timer {
-      color: #ccc;
-      margin-bottom: 20px;
+      color: #bdc3c7;
+      font-size: 1.1rem;
+      margin: 1.5rem 0;
+      padding: 0.8rem;
+      background-color: rgba(44, 62, 80, 0.3);
+      border-radius: 6px;
+      display: inline-block;
     }
+    
+    .timer span {
+      color: var(--primary);
+      font-weight: bold;
+    }
+    
     .copy-btn {
-      padding: 12px 24px;
-      font-size: 1em;
-      background-color: #9b59b6;
+      background: linear-gradient(135deg, var(--primary), #8e44ad);
       color: white;
       border: none;
-      border-radius: 8px;
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      border-radius: 30px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      margin-top: 1rem;
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+      position: relative;
+      overflow: hidden;
     }
+    
     .copy-btn:hover {
-      background-color: #7c3fa0;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(155, 89, 182, 0.6);
+    }
+    
+    .copy-btn:active {
+      transform: translateY(0);
+    }
+    
+    .copy-btn::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        to bottom right,
+        transparent 45%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 55%
+      );
+      transform: rotate(30deg);
+      transition: all 0.5s ease;
+    }
+    
+    .copy-btn:hover::after {
+      left: 100%;
+    }
+    
+    .stars {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    .star {
+      position: absolute;
+      background-color: white;
+      border-radius: 50%;
+      animation: twinkle var(--duration) infinite ease-in-out;
+      opacity: 0;
+    }
+    
+    @keyframes twinkle {
+      0%, 100% { opacity: 0; }
+      50% { opacity: var(--opacity); }
     }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>¡Tu Clave WERO!</h1>
-    <div class="key" id="keyBox">Cargando...</div>
-    <div class="timer" id="timer">Tiempo restante: calculando...</div>
-    <button class="copy-btn" onclick="copyKey()">Copiar Clave</button>
+  <div class="container">
+    <div class="card">
+      <div class="stars" id="stars"></div>
+      <h1>GENERADOR DE CLAVES WERO</h1>
+      <div class="key-display" id="keyOutput">Generando clave...</div>
+      <div class="timer">Tiempo restante: <span id="timeRemaining">3 días 00:00:00</span></div>
+      <button class="copy-btn" id="copyBtn">Copiar Clave</button>
+    </div>
   </div>
 
   <script>
-    // 1. Obtener clave desde key.txt
-    async function fetchKey() {
-      try {
-        const response = await fetch('key.txt?t=' + Date.now());
-        return (await response.text()).trim();
-      } catch {
-        return "WERO-A9D4Q1C7MBEX"; // Clave por defecto
+    // Configuración
+    const KEY_COUNT = 1000;
+    const ROTATION_DAYS = 3;
+    const START_DATE = new Date("2023-01-01T00:00:00"); // Fecha de inicio fija
+
+    // Generador de claves
+    function generateKeys() {
+      const keys = [];
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      const rng = new Math.seedrandom('wero-seed'); // Semilla fija para claves consistentes
+
+      for (let i = 0; i < KEY_COUNT; i++) {
+        let key = "WERO-";
+        for (let j = 0; j < 12; j++) {
+          key += chars[Math.floor(rng() * chars.length)];
+        }
+        keys.push(key);
+      }
+      return keys;
+    }
+
+    // Calcula la clave actual basada en la fecha
+    function getCurrentKey() {
+      const now = new Date();
+      const elapsed = now - START_DATE;
+      const daysPassed = Math.floor(elapsed / (1000 * 60 * 60 * 24));
+      const keyIndex = Math.floor(daysPassed / ROTATION_DAYS) % KEY_COUNT;
+      
+      const nextRotation = new Date(START_DATE);
+      nextRotation.setDate(START_DATE.getDate() + (keyIndex + 1) * ROTATION_DAYS);
+      
+      return {
+        key: generateKeys()[keyIndex],
+        remaining: nextRotation - now
+      };
+    }
+
+    // Formatea el tiempo restante
+    function formatTime(ms) {
+      const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+      
+      return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Actualiza la interfaz
+    function updateDisplay() {
+      const {key, remaining} = getCurrentKey();
+      document.getElementById("keyOutput").textContent = key;
+      document.getElementById("timeRemaining").textContent = formatTime(remaining);
+      
+      if (remaining <= 0) {
+        setTimeout(() => location.reload(), 1000);
       }
     }
 
-    // 2. Calcular tiempo restante (72 horas desde última modificación)
-    async function getKeyData() {
-      const key = await fetchKey();
-      const nextRotation = new Date();
-      nextRotation.setHours(nextRotation.getHours() + 72);
-      return { key, nextRotation };
+    // Crear estrellas decorativas
+    function createStars() {
+      const starsContainer = document.getElementById("stars");
+      const starCount = 50;
+      
+      for (let i = 0; i < starCount; i++) {
+        const star = document.createElement("div");
+        star.classList.add("star");
+        
+        const size = Math.random() * 3;
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.left = `${Math.random() * 100}%`;
+        star.style.top = `${Math.random() * 100}%`;
+        star.style.setProperty('--opacity', Math.random());
+        star.style.setProperty('--duration', `${Math.random() * 3 + 2}s`);
+        star.style.animationDelay = `${Math.random() * 5}s`;
+        
+        starsContainer.appendChild(star);
+      }
     }
 
-    // 3. Formatear tiempo
-    function formatTime(endTime) {
-      const now = new Date();
-      const ms = endTime - now;
-      const days = Math.floor(ms / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      return `${days}d ${hours}h`;
-    }
+    // Copiar al portapapeles
+    document.getElementById("copyBtn").addEventListener("click", () => {
+      const key = document.getElementById("keyOutput").textContent;
+      navigator.clipboard.writeText(key).then(() => {
+        const btn = document.getElementById("copyBtn");
+        btn.textContent = "¡Copiada!";
+        setTimeout(() => {
+          btn.textContent = "Copiar Clave";
+        }, 2000);
+      });
+    });
 
-    // 4. Actualizar la UI
-    async function updateUI() {
-      const { key, nextRotation } = await getKeyData();
-      document.getElementById("keyBox").textContent = key;
-      document.getElementById("timer").textContent = 
-        `Próxima rotación: ${formatTime(nextRotation)}`;
-    }
-
-    // 5. Copiar al portapapeles
-    function copyKey() {
-      navigator.clipboard.writeText(document.getElementById("keyBox").textContent)
-        .then(() => alert("¡Clave copiada!"));
-    }
-
-    // Iniciar
-    updateUI();
-    setInterval(updateUI, 3600000); // Actualizar cada hora
+    // Inicialización
+    createStars();
+    updateDisplay();
+    setInterval(updateDisplay, 1000); // Actualiza cada segundo
   </script>
 </body>
 </html>
