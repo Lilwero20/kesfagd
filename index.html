@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Generador de Claves WERO</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap');
     
@@ -47,24 +46,12 @@
       overflow: hidden;
     }
     
-    .card::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(155, 89, 182, 0.1) 0%, transparent 70%);
-      z-index: 0;
-    }
-    
     h1 {
       font-family: 'Orbitron', sans-serif;
       color: var(--primary);
       margin-bottom: 1.5rem;
       font-size: 1.8rem;
       text-shadow: 0 0 10px rgba(155, 89, 182, 0.4);
-      position: relative;
     }
     
     .key-display {
@@ -78,13 +65,6 @@
       border-radius: 8px;
       border: 1px solid var(--primary);
       box-shadow: 0 0 15px rgba(155, 89, 182, 0.3);
-      position: relative;
-      transition: all 0.3s ease;
-    }
-    
-    .key-display:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 0 20px rgba(155, 89, 182, 0.5);
     }
     
     .timer {
@@ -113,134 +93,75 @@
       margin-top: 1rem;
       font-family: 'Orbitron', sans-serif;
       letter-spacing: 1px;
-      text-transform: uppercase;
       transition: all 0.3s ease;
       box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
-      position: relative;
-      overflow: hidden;
     }
     
     .copy-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(155, 89, 182, 0.6);
     }
-    
-    .copy-btn:active {
-      transform: translateY(0);
-    }
-    
-    .copy-btn::after {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(
-        to bottom right,
-        transparent 45%,
-        rgba(255, 255, 255, 0.3) 50%,
-        transparent 55%
-      );
-      transform: rotate(30deg);
-      transition: all 0.5s ease;
-    }
-    
-    .copy-btn:hover::after {
-      left: 100%;
-    }
-    
-    .stars {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      z-index: 0;
-    }
-    
-    .star {
-      position: absolute;
-      background-color: white;
-      border-radius: 50%;
-      animation: twinkle var(--duration) infinite ease-in-out;
-      opacity: 0;
-    }
-    
-    @keyframes twinkle {
-      0%, 100% { opacity: 0; }
-      50% { opacity: var(--opacity); }
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
-      <div class="stars" id="stars"></div>
       <h1>GENERADOR DE CLAVES WERO</h1>
-      <div class="key-display" id="keyOutput">Generando clave...</div>
-      <div class="timer">Tiempo restante: <span id="timeRemaining">3 días 00:00:00</span></div>
+      <div class="key-display" id="keyOutput">Cargando...</div>
+      <div class="timer">Próxima rotación: <span id="timeRemaining">--:--:--</span></div>
       <button class="copy-btn" id="copyBtn">Copiar Clave</button>
     </div>
   </div>
 
   <script>
-    // Configuración
-    const KEY_COUNT = 1000;
-    const ROTATION_DAYS = 3;
-    const THREE_DAYS_MS = ROTATION_DAYS * 24 * 60 * 60 * 1000;
+    // Lista predefinida de claves en orden
+    const KEY_SEQUENCE = [
+      "WERO-K7L9M3Z2XV",
+      "WERO-8ND4A1QWJZ",
+      "WERO-Z3T7Y9LCMB",
+      "WERO-PL8XQ2RKJE",
+      "WERO-Y5WZMN1VTC",
+      "WERO-UX3KJ49LEA",
+      "WERO-29CMYQRLVB",
+      "WERO-H1J8EX2WTG",
+      "WERO-V6FZKMLUQP",
+      "WERO-TZ94W1ENMB"
+    ];
 
-    // Sistema de persistencia
-    function initKeySystem() {
-      if (!localStorage.getItem('weroKeyStart')) {
-        localStorage.setItem('weroKeyStart', Date.now());
+    // Duración de cada clave (3 días en milisegundos)
+    const KEY_DURATION = 3 * 24 * 60 * 60 * 1000;
+
+    // Fecha de inicio fija (ajusta esta fecha a cuando quieres que comience la primera clave)
+    // Formato: Año, Mes-1, Día, Hora, Minuto, Segundo
+    const START_DATE = new Date(2025, 6, 29, 5, 16, 0).getTime(); // 1 de Noviembre 2023, 00:00:00
+
+    // Obtener la clave actual basada en el tiempo
+    function getCurrentKey() {
+      const now = Date.now();
+      const timePassed = now - START_DATE;
+      
+      // Si el tiempo es anterior a START_DATE, usar la primera clave
+      if (timePassed < 0) {
+        return {
+          key: KEY_SEQUENCE[0],
+          remaining: START_DATE - now
+        };
       }
       
-      const savedData = JSON.parse(localStorage.getItem('weroKeyData') || '{}');
-      
-      if (!savedData.currentKey || (Date.now() - savedData.startTime) >= THREE_DAYS_MS) {
-        // Rotar clave si ha pasado el tiempo
-        const newKeyIndex = savedData.keyIndex ? (savedData.keyIndex + 1) % KEY_COUNT : 0;
-        const newKey = generateKeys()[newKeyIndex];
-        
-        localStorage.setItem('weroKeyData', JSON.stringify({
-          currentKey: newKey,
-          keyIndex: newKeyIndex,
-          startTime: Date.now()
-        }));
-      }
-    }
-
-    // Generador de claves (igual que antes)
-    function generateKeys() {
-      const keys = [];
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      const rng = new Math.seedrandom('wero-seed');
-      
-      for (let i = 0; i < KEY_COUNT; i++) {
-        let key = "WERO-";
-        for (let j = 0; j < 12; j++) {
-          key += chars[Math.floor(rng() * chars.length)];
-        }
-        keys.push(key);
-      }
-      return keys;
-    }
-
-    // Obtener datos actuales
-    function getCurrentKeyData() {
-      const savedData = JSON.parse(localStorage.getItem('weroKeyData'));
-      const remaining = THREE_DAYS_MS - (Date.now() - savedData.startTime);
+      const keyIndex = Math.floor(timePassed / KEY_DURATION) % KEY_SEQUENCE.length;
+      const nextRotation = START_DATE + ((keyIndex + 1) * KEY_DURATION);
+      const remaining = nextRotation - now;
       
       return {
-        key: savedData.currentKey,
-        remaining: remaining > 0 ? remaining : 0
+        key: KEY_SEQUENCE[keyIndex],
+        remaining: remaining
       };
     }
 
-    // Formatear tiempo (igual que antes)
+    // Formatear tiempo restante
     function formatTime(ms) {
+      if (ms <= 0) return "00:00:00";
+      
       const days = Math.floor(ms / (1000 * 60 * 60 * 24));
       const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
@@ -249,40 +170,19 @@
       return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 
-    // Actualizar interfaz
+    // Actualizar la interfaz
     function updateDisplay() {
-      const {key, remaining} = getCurrentKeyData();
+      const {key, remaining} = getCurrentKey();
+      
       document.getElementById("keyOutput").textContent = key;
       document.getElementById("timeRemaining").textContent = formatTime(remaining);
       
-      if (remaining <= 0) {
-        initKeySystem(); // Forzar rotación
-        setTimeout(() => location.reload(), 1000);
-      }
+      // Actualizar más rápido cuando esté cerca de rotar
+      const refreshTime = remaining < 60000 ? 1000 : 30000;
+      setTimeout(updateDisplay, refreshTime);
     }
 
-    // Resto del código (estrellas, copiar, etc.) igual que antes
-    function createStars() {
-      const starsContainer = document.getElementById("stars");
-      const starCount = 50;
-      
-      for (let i = 0; i < starCount; i++) {
-        const star = document.createElement("div");
-        star.classList.add("star");
-        
-        const size = Math.random() * 3;
-        star.style.width = `${size}px`;
-        star.style.height = `${size}px`;
-        star.style.left = `${Math.random() * 100}%`;
-        star.style.top = `${Math.random() * 100}%`;
-        star.style.setProperty('--opacity', Math.random());
-        star.style.setProperty('--duration', `${Math.random() * 3 + 2}s`);
-        star.style.animationDelay = `${Math.random() * 5}s`;
-        
-        starsContainer.appendChild(star);
-      }
-    }
-
+    // Copiar clave al portapapeles
     document.getElementById("copyBtn").addEventListener("click", () => {
       const key = document.getElementById("keyOutput").textContent;
       navigator.clipboard.writeText(key).then(() => {
@@ -294,11 +194,8 @@
       });
     });
 
-    // Inicialización
-    initKeySystem();
-    createStars();
+    // Iniciar
     updateDisplay();
-    setInterval(updateDisplay, 1000);
   </script>
 </body>
 </html>
