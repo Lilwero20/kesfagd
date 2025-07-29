@@ -14,7 +14,6 @@
       align-items: center;
       height: 100vh;
     }
-
     .box {
       background-color: #fff;
       padding: 40px 30px;
@@ -24,13 +23,11 @@
       max-width: 400px;
       box-shadow: 0 0 20px #888;
     }
-
     .box h1 {
       font-size: 1.6em;
       margin-bottom: 20px;
       color: #000;
     }
-
     .key {
       font-size: 1.2em;
       font-weight: bold;
@@ -40,7 +37,6 @@
       word-break: break-word;
       margin-bottom: 25px;
     }
-
     .copy-btn {
       padding: 12px 24px;
       font-size: 1em;
@@ -52,11 +48,12 @@
       cursor: pointer;
       transition: background-color 0.2s;
     }
-
     .copy-btn:hover {
       background-color: #7c3fa0;
     }
   </style>
+  <!-- Añadimos seedrandom para claves predecibles -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
 </head>
 <body>
   <div class="box">
@@ -66,70 +63,63 @@
   </div>
 
   <script>
-    // Generar 1000 claves predefinidas
-    function generatePredefinedKeys() {
+    // 1. Generamos 1000 claves fijas (siempre las mismas)
+    const generatePredefinedKeys = () => {
       const keys = [];
       const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      
-      // Semilla fija para que siempre genere las mismas 1000 claves
-      const seed = 12345;
-      Math.seedrandom(seed);
+      const rng = new Math.seedrandom('lilwero20'); // Semilla fija
       
       for (let k = 0; k < 1000; k++) {
         let key = "WERO-";
         for (let i = 0; i < 12; i++) {
-          key += chars[Math.floor(Math.random() * chars.length)];
+          key += chars[Math.floor(rng() * chars.length)];
         }
         keys.push(key);
       }
-      
-      // Restaurar el generador aleatorio
-      Math.seedrandom();
-      
       return keys;
-    }
+    };
 
     const predefinedKeys = generatePredefinedKeys();
 
-    function getKey() {
-      const stored = JSON.parse(localStorage.getItem("userKeyData"));
-      const now = new Date().getTime();
-      const threeDays = 3 * 24 * 60 * 60 * 1000; // 3 días en ms
+    // 2. Obtenemos la clave actual (rota cada 3 días)
+    const getCurrentKey = () => {
+      const now = Date.now();
+      const threeDaysMs = 3 * 24 * 60 * 60 * 1000; // 3 días en milisegundos
+      
+      // Verificamos si ya hay una clave guardada
+      const savedData = localStorage.getItem("weroKeyData");
+      let keyIndex = 0;
+      let lastUpdate = now;
 
-      if (stored && stored.timestamp && stored.keyIndex !== undefined && (now - stored.timestamp) < threeDays) {
-        return predefinedKeys[stored.keyIndex];
-      } else {
-        // Calcular el nuevo índice
-        let newIndex;
-        if (stored && stored.keyIndex !== undefined) {
-          newIndex = (stored.keyIndex + 1) % predefinedKeys.length;
+      if (savedData) {
+        const { index, timestamp } = JSON.parse(savedData);
+        // Si han pasado 3 días, avanzamos al siguiente índice
+        if (now - timestamp >= threeDaysMs) {
+          keyIndex = (index + 1) % predefinedKeys.length;
+          lastUpdate = now;
         } else {
-          newIndex = 0;
+          keyIndex = index;
+          lastUpdate = timestamp;
         }
-        
-        localStorage.setItem("userKeyData", JSON.stringify({
-          keyIndex: newIndex,
-          timestamp: now
-        }));
-        
-        return predefinedKeys[newIndex];
       }
-    }
 
-    function copyKey() {
-      const key = document.getElementById("keyBox").innerText;
-      navigator.clipboard.writeText(key).then(() => {
-        alert("Key copied to clipboard!");
-      });
-    }
+      // Guardamos el nuevo estado
+      localStorage.setItem("weroKeyData", JSON.stringify({
+        index: keyIndex,
+        timestamp: lastUpdate
+      }));
 
-    // Mostrar la clave
-    document.getElementById("keyBox").innerText = getKey();
+      return predefinedKeys[keyIndex];
+    };
 
-    // Polyfill para seedrandom si es necesario
-    if (Math.seedrandom === undefined) {
-      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"><\/script>');
-    }
+    // 3. Copiar al portapapeles
+    const copyKey = () => {
+      navigator.clipboard.writeText(document.getElementById("keyBox").innerText)
+        .then(() => alert("¡Key copiada!"));
+    };
+
+    // Mostramos la clave al cargar
+    document.getElementById("keyBox").innerText = getCurrentKey();
   </script>
 </body>
 </html>
