@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wero Key Generator</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #000;
+      color: #000;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      background-color: #fff;
+      padding: 40px 30px;
+      border-radius: 16px;
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 0 20px #888;
+    }
+
+    .box h1 {
+      font-size: 1.6em;
+      margin-bottom: 20px;
+      color: #000;
+    }
+
+    .key {
+      font-size: 1.2em;
+      font-weight: bold;
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+      word-break: break-word;
+      margin-bottom: 25px;
+    }
+
+    .copy-btn {
+      padding: 12px 24px;
+      font-size: 1em;
+      font-weight: bold;
+      color: #fff;
+      background-color: #9b59b6;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .copy-btn:hover {
+      background-color: #7c3fa0;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Here is your key, enjoy!</h1>
+    <div class="key" id="keyBox">Loading...</div>
+    <button class="copy-btn" onclick="copyKey()">Copy</button>
+  </div>
+
+  <script>
+    function generateKey() {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let key = "WERO-";
+      for (let i = 0; i < 12; i++) {
+        key += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return key;
+    }
+
+    function getKey() {
+      const stored = JSON.parse(localStorage.getItem("userKeyData"));
+      const now = new Date().getTime();
+      const threeDays = 3 * 24 * 60 * 60 * 1000; // 3 días en ms
+
+      if (stored && stored.timestamp && (now - stored.timestamp) < threeDays) {
+        return stored.key;
+      } else {
+        const newKey = generateKey();
+        localStorage.setItem("userKeyData", JSON.stringify({
+          key: newKey,
+          timestamp: now
+        }));
+        return newKey;
+      }
+    }
+
+    function copyKey() {
+      const key = document.getElementById("keyBox").innerText;
+      navigator.clipboard.writeText(key).then(() => {
+        alert("Key copied to clipboard!");
+      });
+    }
+
+    // Mostrar la clave
+    document.getElementById("keyBox").innerText = getKey();
+  </script>
+</body>
+</html>
