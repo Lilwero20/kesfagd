@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Wero Key Generator</title>
+  <title>Generador de Claves WERO</title>
   <style>
     body {
       margin: 0;
       background-color: #000;
-      color: #000;
+      color: #fff;
       font-family: 'Segoe UI', sans-serif;
       display: flex;
       justify-content: center;
@@ -15,151 +15,96 @@
       height: 100vh;
     }
     .box {
-      background-color: #fff;
-      padding: 40px 30px;
+      background-color: #222;
+      padding: 30px;
       border-radius: 16px;
       text-align: center;
       width: 90%;
       max-width: 400px;
-      box-shadow: 0 0 20px #888;
-    }
-    .box h1 {
-      font-size: 1.6em;
-      margin-bottom: 20px;
-      color: #000;
+      box-shadow: 0 0 20px #9b59b6;
     }
     .key {
       font-size: 1.2em;
       font-weight: bold;
-      background-color: #f5f5f5;
+      background-color: #333;
       padding: 15px;
       border-radius: 8px;
       word-break: break-word;
-      margin-bottom: 15px;
+      margin: 20px 0;
+      color: #9b59b6;
     }
     .timer {
-      font-size: 1em;
-      color: #666;
+      color: #ccc;
       margin-bottom: 20px;
     }
     .copy-btn {
       padding: 12px 24px;
       font-size: 1em;
-      font-weight: bold;
-      color: #fff;
       background-color: #9b59b6;
+      color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: background-color 0.3s;
     }
     .copy-btn:hover {
       background-color: #7c3fa0;
     }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
 </head>
 <body>
   <div class="box">
-    <h1>Here is your key, enjoy!</h1>
-    <div class="key" id="keyBox">Loading...</div>
-    <div class="timer" id="timer">Time remaining: calculating...</div>
-    <button class="copy-btn" onclick="copyKey()">Copy Key</button>
+    <h1>¡Tu Clave WERO!</h1>
+    <div class="key" id="keyBox">Cargando...</div>
+    <div class="timer" id="timer">Tiempo restante: calculando...</div>
+    <button class="copy-btn" onclick="copyKey()">Copiar Clave</button>
   </div>
 
   <script>
-    // 1. Generamos 1000 claves fijas (siempre las mismas)
-    const generatePredefinedKeys = () => {
-      const keys = [];
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      const rng = new Math.seedrandom('lilwero20'); // Semilla fija
-      
-      for (let k = 0; k < 1000; k++) {
-        let key = "WERO-";
-        for (let i = 0; i < 12; i++) {
-          key += chars[Math.floor(rng() * chars.length)];
-        }
-        keys.push(key);
+    // 1. Obtener clave desde key.txt
+    async function fetchKey() {
+      try {
+        const response = await fetch('key.txt?t=' + Date.now());
+        return (await response.text()).trim();
+      } catch {
+        return "WERO-A9D4Q1C7MBEX"; // Clave por defecto
       }
-      return keys;
-    };
+    }
 
-    const predefinedKeys = generatePredefinedKeys();
+    // 2. Calcular tiempo restante (72 horas desde última modificación)
+    async function getKeyData() {
+      const key = await fetchKey();
+      const nextRotation = new Date();
+      nextRotation.setHours(nextRotation.getHours() + 72);
+      return { key, nextRotation };
+    }
 
-    // 2. Obtenemos la clave actual y configuramos el temporizador
-    const initializeKeySystem = () => {
-      const now = Date.now();
-      const threeDaysMs = 3 * 24 * 60 * 60 * 1000; // 3 días en milisegundos
-      
-      let keyData = localStorage.getItem("weroKeyData");
-      let keyIndex, claimTime;
+    // 3. Formatear tiempo
+    function formatTime(endTime) {
+      const now = new Date();
+      const ms = endTime - now;
+      const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      return `${days}d ${hours}h`;
+    }
 
-      if (keyData) {
-        keyData = JSON.parse(keyData);
-        // Si han pasado 3 días desde la última reclamación, avanzamos al siguiente índice
-        if (now - keyData.timestamp >= threeDaysMs) {
-          keyIndex = (keyData.index + 1) % predefinedKeys.length;
-          claimTime = now;
-        } else {
-          keyIndex = keyData.index;
-          claimTime = keyData.timestamp;
-        }
-      } else {
-        // Primera vez que se reclama una clave
-        keyIndex = 0;
-        claimTime = now;
-      }
+    // 4. Actualizar la UI
+    async function updateUI() {
+      const { key, nextRotation } = await getKeyData();
+      document.getElementById("keyBox").textContent = key;
+      document.getElementById("timer").textContent = 
+        `Próxima rotación: ${formatTime(nextRotation)}`;
+    }
 
-      // Guardamos el nuevo estado
-      localStorage.setItem("weroKeyData", JSON.stringify({
-        index: keyIndex,
-        timestamp: claimTime
-      }));
+    // 5. Copiar al portapapeles
+    function copyKey() {
+      navigator.clipboard.writeText(document.getElementById("keyBox").textContent)
+        .then(() => alert("¡Clave copiada!"));
+    }
 
-      // Mostramos la clave actual
-      document.getElementById("keyBox").innerText = predefinedKeys[keyIndex];
-      
-      // Iniciamos el contador
-      startTimer(claimTime, threeDaysMs);
-    };
-
-    // 3. Contador de tiempo restante
-    const startTimer = (claimTime, totalDuration) => {
-      const updateTimer = () => {
-        const now = Date.now();
-        const elapsed = now - claimTime;
-        const remaining = totalDuration - elapsed;
-        
-        if (remaining <= 0) {
-          // El tiempo ha expirado, recargamos la página para obtener nueva clave
-          document.getElementById("timer").innerText = "Key expired! Refreshing...";
-          setTimeout(() => location.reload(), 2000);
-          return;
-        }
-        
-        // Convertimos a días, horas, minutos, segundos
-        const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-        
-        document.getElementById("timer").innerText = 
-          `Time remaining: ${days}d ${hours}h ${minutes}m ${seconds}s`;
-      };
-      
-      // Actualizamos inmediatamente y luego cada segundo
-      updateTimer();
-      setInterval(updateTimer, 1000);
-    };
-
-    // 4. Copiar al portapapeles
-    const copyKey = () => {
-      navigator.clipboard.writeText(document.getElementById("keyBox").innerText)
-        .then(() => alert("Key copied to clipboard!"));
-    };
-
-    // Iniciamos el sistema al cargar la página
-    initializeKeySystem();
+    // Iniciar
+    updateUI();
+    setInterval(updateUI, 3600000); // Actualizar cada hora
   </script>
 </body>
 </html>
