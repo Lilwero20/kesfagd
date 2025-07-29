@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Wero Key Generator</title>
   <style>
     body {
@@ -14,6 +14,7 @@
       align-items: center;
       height: 100vh;
     }
+
     .box {
       background-color: #fff;
       padding: 40px 30px;
@@ -23,11 +24,13 @@
       max-width: 400px;
       box-shadow: 0 0 20px #888;
     }
+
     .box h1 {
       font-size: 1.6em;
       margin-bottom: 20px;
       color: #000;
     }
+
     .key {
       font-size: 1.2em;
       font-weight: bold;
@@ -35,9 +38,9 @@
       padding: 15px;
       border-radius: 8px;
       word-break: break-word;
-      margin-bottom: 10px;
-      user-select: all;
+      margin-bottom: 25px;
     }
+
     .copy-btn {
       padding: 12px 24px;
       font-size: 1em;
@@ -48,18 +51,10 @@
       border-radius: 8px;
       cursor: pointer;
       transition: background-color 0.2s;
-      margin-bottom: 15px;
     }
+
     .copy-btn:hover {
       background-color: #7c3fa0;
-    }
-    .timer {
-      font-size: 1em;
-      color: #000;
-    }
-    .timer span {
-      color: #00ff00;
-      font-weight: bold;
     }
   </style>
 </head>
@@ -68,117 +63,73 @@
     <h1>Here is your key, enjoy!</h1>
     <div class="key" id="keyBox">Loading...</div>
     <button class="copy-btn" onclick="copyKey()">Copy</button>
-    <div class="timer" id="timer"></div>
   </div>
 
   <script>
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-    // Genera una key aleatoria tipo "WERO-XXXXXXXXXXXX"
-    function generateRandomKey() {
-      let key = "WERO-";
-      for (let i = 0; i < 12; i++) {
-        key += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return key;
-    }
-
-    // Genera lista de 1000 keys y la guarda en sessionStorage para que persista durante la sesión
-    function generateKeyList() {
-      let list = sessionStorage.getItem("keyList");
-      if (list) {
-        return JSON.parse(list);
-      }
-      const keys = new Set();
-      // Aseguramos que las keys sean únicas
-      while(keys.size < 1000) {
-        keys.add(generateRandomKey());
-      }
-      const keysArray = Array.from(keys);
-      sessionStorage.setItem("keyList", JSON.stringify(keysArray));
-      return keysArray;
-    }
-
-    const keyList = generateKeyList();
-    const keyDuration = 3 * 24 * 60 * 60 * 1000; // 3 días en milisegundos
-
-    // Recupera el dato del localStorage del usuario con la key actual e instante de asignación
-    function getUserKeyData() {
-      const data = localStorage.getItem("userKeyData");
-      if (!data) return null;
-      try {
-        return JSON.parse(data);
-      } catch {
-        return null;
-      }
-    }
-
-    // Guarda la info en localStorage
-    function setUserKeyData(data) {
-      localStorage.setItem("userKeyData", JSON.stringify(data));
-    }
-
-    // Determina la key actual para el usuario, y si ya pasó el tiempo, avanza a la siguiente
-    function getCurrentKey() {
-      let data = getUserKeyData();
-      const now = Date.now();
-
-      if (data) {
-        // Si ya pasaron los 3 días, pasamos a la siguiente key en bucle
-        if (now - data.timestamp > keyDuration) {
-          const newIndex = (data.index + 1) % keyList.length;
-          data = { index: newIndex, timestamp: now };
-          setUserKeyData(data);
+    // Generar 1000 claves predefinidas
+    function generatePredefinedKeys() {
+      const keys = [];
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      
+      // Semilla fija para que siempre genere las mismas 1000 claves
+      const seed = 12345;
+      Math.seedrandom(seed);
+      
+      for (let k = 0; k < 1000; k++) {
+        let key = "WERO-";
+        for (let i = 0; i < 12; i++) {
+          key += chars[Math.floor(Math.random() * chars.length)];
         }
+        keys.push(key);
+      }
+      
+      // Restaurar el generador aleatorio
+      Math.seedrandom();
+      
+      return keys;
+    }
+
+    const predefinedKeys = generatePredefinedKeys();
+
+    function getKey() {
+      const stored = JSON.parse(localStorage.getItem("userKeyData"));
+      const now = new Date().getTime();
+      const threeDays = 3 * 24 * 60 * 60 * 1000; // 3 días en ms
+
+      if (stored && stored.timestamp && stored.keyIndex !== undefined && (now - stored.timestamp) < threeDays) {
+        return predefinedKeys[stored.keyIndex];
       } else {
-        // Primera visita, asignamos la primera key con timestamp actual
-        data = { index: 0, timestamp: now };
-        setUserKeyData(data);
-      }
-      return {
-        key: keyList[data.index],
-        timestamp: data.timestamp
-      };
-    }
-
-    // Muestra la key y el timer, actualizando cada segundo
-    function showKeyAndTimer() {
-      const keyInfo = getCurrentKey();
-      const keyBox = document.getElementById("keyBox");
-      const timerBox = document.getElementById("timer");
-
-      keyBox.textContent = keyInfo.key;
-
-      function updateTimer() {
-        const now = Date.now();
-        const timeLeft = keyDuration - (now - keyInfo.timestamp);
-
-        if (timeLeft <= 0) {
-          // Pasó el tiempo, recargamos para actualizar la key
-          location.reload();
-          return;
+        // Calcular el nuevo índice
+        let newIndex;
+        if (stored && stored.keyIndex !== undefined) {
+          newIndex = (stored.keyIndex + 1) % predefinedKeys.length;
+        } else {
+          newIndex = 0;
         }
-
-        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-        timerBox.innerHTML = `Key changes in: <span>${hours}h</span> <span>${minutes}m</span> <span>${seconds}s</span>`;
+        
+        localStorage.setItem("userKeyData", JSON.stringify({
+          keyIndex: newIndex,
+          timestamp: now
+        }));
+        
+        return predefinedKeys[newIndex];
       }
-
-      updateTimer();
-      setInterval(updateTimer, 1000);
     }
 
-    // Copiar la key al portapapeles
     function copyKey() {
-      const key = document.getElementById("keyBox").textContent;
+      const key = document.getElementById("keyBox").innerText;
       navigator.clipboard.writeText(key).then(() => {
         alert("Key copied to clipboard!");
       });
     }
 
-    showKeyAndTimer();
+    // Mostrar la clave
+    document.getElementById("keyBox").innerText = getKey();
+
+    // Polyfill para seedrandom si es necesario
+    if (Math.seedrandom === undefined) {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"><\/script>');
+    }
   </script>
 </body>
 </html>
