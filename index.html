@@ -14,7 +14,6 @@
       align-items: center;
       height: 100vh;
     }
-
     .box {
       background-color: #fff;
       padding: 40px 30px;
@@ -24,13 +23,11 @@
       max-width: 400px;
       box-shadow: 0 0 20px #888;
     }
-
     .box h1 {
       font-size: 1.6em;
       margin-bottom: 20px;
       color: #000;
     }
-
     .key {
       font-size: 1.2em;
       font-weight: bold;
@@ -41,7 +38,6 @@
       margin-bottom: 10px;
       user-select: all;
     }
-
     .copy-btn {
       padding: 12px 24px;
       font-size: 1em;
@@ -54,17 +50,13 @@
       transition: background-color 0.2s;
       margin-bottom: 15px;
     }
-
     .copy-btn:hover {
       background-color: #7c3fa0;
     }
-
     .timer {
       font-size: 1em;
       color: #000;
     }
-
-    /* Números en verde */
     .timer span {
       color: #00ff00;
       font-weight: bold;
@@ -82,30 +74,35 @@
   <script>
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
+    // Genera una key aleatoria tipo "WERO-XXXXXXXXXXXX"
     function generateRandomKey() {
       let key = "WERO-";
       for (let i = 0; i < 12; i++) {
-        key += chars[Math.floor(Math.random() * chars.length)];
+        key += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       return key;
     }
 
+    // Genera lista de 1000 keys y la guarda en sessionStorage para que persista durante la sesión
     function generateKeyList() {
       let list = sessionStorage.getItem("keyList");
       if (list) {
         return JSON.parse(list);
       }
-      const keys = [];
-      for (let i = 0; i < 1000; i++) {
-        keys.push(generateRandomKey());
+      const keys = new Set();
+      // Aseguramos que las keys sean únicas
+      while(keys.size < 1000) {
+        keys.add(generateRandomKey());
       }
-      sessionStorage.setItem("keyList", JSON.stringify(keys));
-      return keys;
+      const keysArray = Array.from(keys);
+      sessionStorage.setItem("keyList", JSON.stringify(keysArray));
+      return keysArray;
     }
 
     const keyList = generateKeyList();
-    const keyDuration = 3 * 24 * 60 * 60 * 1000; // 3 días en ms
+    const keyDuration = 3 * 24 * 60 * 60 * 1000; // 3 días en milisegundos
 
+    // Recupera el dato del localStorage del usuario con la key actual e instante de asignación
     function getUserKeyData() {
       const data = localStorage.getItem("userKeyData");
       if (!data) return null;
@@ -116,43 +113,48 @@
       }
     }
 
+    // Guarda la info en localStorage
     function setUserKeyData(data) {
       localStorage.setItem("userKeyData", JSON.stringify(data));
     }
 
+    // Determina la key actual para el usuario, y si ya pasó el tiempo, avanza a la siguiente
     function getCurrentKey() {
       let data = getUserKeyData();
       const now = Date.now();
 
       if (data) {
+        // Si ya pasaron los 3 días, pasamos a la siguiente key en bucle
         if (now - data.timestamp > keyDuration) {
-          let newIndex = (data.index + 1) % keyList.length;
+          const newIndex = (data.index + 1) % keyList.length;
           data = { index: newIndex, timestamp: now };
           setUserKeyData(data);
         }
       } else {
+        // Primera visita, asignamos la primera key con timestamp actual
         data = { index: 0, timestamp: now };
         setUserKeyData(data);
       }
-
       return {
         key: keyList[data.index],
         timestamp: data.timestamp
       };
     }
 
+    // Muestra la key y el timer, actualizando cada segundo
     function showKeyAndTimer() {
       const keyInfo = getCurrentKey();
       const keyBox = document.getElementById("keyBox");
       const timerBox = document.getElementById("timer");
 
-      keyBox.innerText = keyInfo.key;
+      keyBox.textContent = keyInfo.key;
 
       function updateTimer() {
         const now = Date.now();
         const timeLeft = keyDuration - (now - keyInfo.timestamp);
 
         if (timeLeft <= 0) {
+          // Pasó el tiempo, recargamos para actualizar la key
           location.reload();
           return;
         }
@@ -168,8 +170,9 @@
       setInterval(updateTimer, 1000);
     }
 
+    // Copiar la key al portapapeles
     function copyKey() {
-      const key = document.getElementById("keyBox").innerText;
+      const key = document.getElementById("keyBox").textContent;
       navigator.clipboard.writeText(key).then(() => {
         alert("Key copied to clipboard!");
       });
