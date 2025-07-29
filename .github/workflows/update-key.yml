@@ -2,57 +2,69 @@ name: 🔄 Actualizar Key Automática
 
 on:
   schedule:
-    - cron: '* * * * *'  # Ejecuta cada minuto
-  workflow_dispatch:     # Permite ejecución manual
+    - cron: '* * * * *'  # Cada minuto
+  workflow_dispatch:
 
 jobs:
-  check-and-update:
+  update-key:
     runs-on: ubuntu-latest
-    timeout-minutes: 2   # Para evitar jobs largos
-
     steps:
-      - name: 🛎️ Checkout del repositorio
+      - name: 🛎️ Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Necesario para hacer push
+          fetch-depth: 0
 
-      - name: 🌐 Obtener HTML de la página
+      - name: 🌐 Obtener HTML
+        id: fetch
         run: |
-          curl -s "https://lilwero20.github.io/kesfagd/" > page.html
-          echo "Página descargada $(ls -lh page.html)"
+          curl -s "https://lilwero20.github.io/kesfagd/" -o page.html
+          echo "Tamaño del HTML: $(wc -c page.html) bytes"
+          echo "Contenido (primeras 100 líneas):"
+          head -100 page.html
 
-      - name: 🔍 Extraer key del HTML
+      - name: 🔍 Extraer key
         id: extract
         run: |
           KEY=$(grep -oP 'WERO-\w{12}' page.html | head -1)
-          echo "Nueva key: $KEY"
-          echo "KEY=${KEY}" >> $GITHUB_ENV
+          if [ -z "$KEY" ]; then
+            echo "::error::NO se encontró ninguna key en el HTML"
+            exit 1
+          fi
+          echo "Key extraída: $KEY"
+          echo "KEY=$KEY" >> $GITHUB_ENV
 
-      - name: 💾 Comparar y actualizar key.txt
+      - name: 💾 Comparar keys
+        id: compare
         run: |
-          # Leer key actual
+          echo "Key nueva: ${{ env.KEY }}"
+          
           if [ -f "key.txt" ]; then
             OLD_KEY=$(cat key.txt)
             echo "Key actual: $OLD_KEY"
           else
             OLD_KEY=""
-            echo "No existe key.txt"
+            echo "key.txt no existe (se creará)"
           fi
 
-          # Comparar keys
-          if [ "$OLD_KEY" != "$KEY" ]; then
-            echo "$KEY" > key.txt
-            echo "🔄 Actualizando key.txt a: $KEY"
-
-            # Configurar Git
-            git config --global user.name "GitHub Actions"
-            git config --global user.email "actions@github.com"
-
-            # Commit y push
-            git add key.txt
-            git commit -m "🔄 Key actualizada: $KEY"
-            git push
-            echo "✅ Key actualizada con éxito"
+          if [ "$OLD_KEY" == "${{ env.KEY }}" ]; then
+            echo "::notice::Key sin cambios"
+            echo "NEEDS_UPDATE=false" >> $GITHUB_ENV
           else
-            echo "⏩ Key sin cambios"
+            echo "::warning::Key cambiada (vieja: $OLD_KEY, nueva: ${{ env.KEY }})"
+            echo "NEEDS_UPDATE=true" >> $GITHUB_ENV
           fi
+
+      - name: ⬆️ Actualizar repositorio
+        if: env.NEEDS_UPDATE == 'true'
+        run: |
+          echo "${{ env.KEY }}" > key.txt
+          
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@users.noreply.github.com"
+          
+          git add key.txt
+          git status
+          git commit -m "🔄 Actualización automática: ${{ env.KEY }}"
+          
+          echo "Token: ${{ secrets.GITHUB_TOKEN }}"
+          git push origin HEAD:${{ github.ref }}
