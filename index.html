@@ -35,7 +35,12 @@
       padding: 15px;
       border-radius: 8px;
       word-break: break-word;
-      margin-bottom: 25px;
+      margin-bottom: 15px;
+    }
+    .timer {
+      font-size: 1em;
+      color: #666;
+      margin-bottom: 20px;
     }
     .copy-btn {
       padding: 12px 24px;
@@ -52,14 +57,14 @@
       background-color: #7c3fa0;
     }
   </style>
-  <!-- Añadimos seedrandom para claves predecibles -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
 </head>
 <body>
   <div class="box">
     <h1>Here is your key, enjoy!</h1>
     <div class="key" id="keyBox">Loading...</div>
-    <button class="copy-btn" onclick="copyKey()">Copy</button>
+    <div class="timer" id="timer">Time remaining: calculating...</div>
+    <button class="copy-btn" onclick="copyKey()">Copy Key</button>
   </div>
 
   <script>
@@ -81,45 +86,80 @@
 
     const predefinedKeys = generatePredefinedKeys();
 
-    // 2. Obtenemos la clave actual (rota cada 3 días)
-    const getCurrentKey = () => {
+    // 2. Obtenemos la clave actual y configuramos el temporizador
+    const initializeKeySystem = () => {
       const now = Date.now();
       const threeDaysMs = 3 * 24 * 60 * 60 * 1000; // 3 días en milisegundos
       
-      // Verificamos si ya hay una clave guardada
-      const savedData = localStorage.getItem("weroKeyData");
-      let keyIndex = 0;
-      let lastUpdate = now;
+      let keyData = localStorage.getItem("weroKeyData");
+      let keyIndex, claimTime;
 
-      if (savedData) {
-        const { index, timestamp } = JSON.parse(savedData);
-        // Si han pasado 3 días, avanzamos al siguiente índice
-        if (now - timestamp >= threeDaysMs) {
-          keyIndex = (index + 1) % predefinedKeys.length;
-          lastUpdate = now;
+      if (keyData) {
+        keyData = JSON.parse(keyData);
+        // Si han pasado 3 días desde la última reclamación, avanzamos al siguiente índice
+        if (now - keyData.timestamp >= threeDaysMs) {
+          keyIndex = (keyData.index + 1) % predefinedKeys.length;
+          claimTime = now;
         } else {
-          keyIndex = index;
-          lastUpdate = timestamp;
+          keyIndex = keyData.index;
+          claimTime = keyData.timestamp;
         }
+      } else {
+        // Primera vez que se reclama una clave
+        keyIndex = 0;
+        claimTime = now;
       }
 
       // Guardamos el nuevo estado
       localStorage.setItem("weroKeyData", JSON.stringify({
         index: keyIndex,
-        timestamp: lastUpdate
+        timestamp: claimTime
       }));
 
-      return predefinedKeys[keyIndex];
+      // Mostramos la clave actual
+      document.getElementById("keyBox").innerText = predefinedKeys[keyIndex];
+      
+      // Iniciamos el contador
+      startTimer(claimTime, threeDaysMs);
     };
 
-    // 3. Copiar al portapapeles
+    // 3. Contador de tiempo restante
+    const startTimer = (claimTime, totalDuration) => {
+      const updateTimer = () => {
+        const now = Date.now();
+        const elapsed = now - claimTime;
+        const remaining = totalDuration - elapsed;
+        
+        if (remaining <= 0) {
+          // El tiempo ha expirado, recargamos la página para obtener nueva clave
+          document.getElementById("timer").innerText = "Key expired! Refreshing...";
+          setTimeout(() => location.reload(), 2000);
+          return;
+        }
+        
+        // Convertimos a días, horas, minutos, segundos
+        const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+        
+        document.getElementById("timer").innerText = 
+          `Time remaining: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+      };
+      
+      // Actualizamos inmediatamente y luego cada segundo
+      updateTimer();
+      setInterval(updateTimer, 1000);
+    };
+
+    // 4. Copiar al portapapeles
     const copyKey = () => {
       navigator.clipboard.writeText(document.getElementById("keyBox").innerText)
-        .then(() => alert("¡Key copiada!"));
+        .then(() => alert("Key copied to clipboard!"));
     };
 
-    // Mostramos la clave al cargar
-    document.getElementById("keyBox").innerText = getCurrentKey();
+    // Iniciamos el sistema al cargar la página
+    initializeKeySystem();
   </script>
 </body>
 </html>
