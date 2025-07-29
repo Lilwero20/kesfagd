@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Wero Key Generator</title>
+  <meta charset="UTF-8" />
+  <title>WeroHub Key Generator</title>
   <style>
     body {
       margin: 0;
@@ -38,7 +38,8 @@
       padding: 15px;
       border-radius: 8px;
       word-break: break-word;
-      margin-bottom: 25px;
+      margin-bottom: 10px;
+      user-select: all;
     }
 
     .copy-btn {
@@ -51,10 +52,16 @@
       border-radius: 8px;
       cursor: pointer;
       transition: background-color 0.2s;
+      margin-bottom: 15px;
     }
 
     .copy-btn:hover {
       background-color: #7c3fa0;
+    }
+
+    .timer {
+      font-size: 1em;
+      color: #333;
     }
   </style>
 </head>
@@ -63,11 +70,14 @@
     <h1>Here is your key, enjoy!</h1>
     <div class="key" id="keyBox">Loading...</div>
     <button class="copy-btn" onclick="copyKey()">Copy</button>
+    <div class="timer" id="timer"></div>
   </div>
 
   <script>
-    function generateKey() {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    // Genera una key aleatoria tipo WERO-XXXXXXXXXXXX
+    function generateRandomKey() {
       let key = "WERO-";
       for (let i = 0; i < 12; i++) {
         key += chars[Math.floor(Math.random() * chars.length)];
@@ -75,21 +85,93 @@
       return key;
     }
 
-    function getKey() {
-      const stored = JSON.parse(localStorage.getItem("userKeyData"));
-      const now = new Date().getTime();
-      const threeDays = 3 * 24 * 60 * 60 * 1000; // 3 días en ms
-
-      if (stored && stored.timestamp && (now - stored.timestamp) < threeDays) {
-        return stored.key;
-      } else {
-        const newKey = generateKey();
-        localStorage.setItem("userKeyData", JSON.stringify({
-          key: newKey,
-          timestamp: now
-        }));
-        return newKey;
+    // Generar lista fija de 1000 keys (se generan solo 1 vez y guardan en sessionStorage)
+    function generateKeyList() {
+      let list = sessionStorage.getItem("keyList");
+      if (list) {
+        return JSON.parse(list);
       }
+      const keys = [];
+      for (let i = 0; i < 1000; i++) {
+        keys.push(generateRandomKey());
+      }
+      sessionStorage.setItem("keyList", JSON.stringify(keys));
+      return keys;
+    }
+
+    const keyList = generateKeyList();
+
+    // Duración en ms de cada key (3 días)
+    const keyDuration = 3 * 24 * 60 * 60 * 1000;
+
+    // Objeto guardado en localStorage para controlar la key actual y timestamp
+    // Ejemplo: { index: 0, timestamp: 1691000000000 }
+    function getUserKeyData() {
+      const data = localStorage.getItem("userKeyData");
+      if (!data) return null;
+      try {
+        return JSON.parse(data);
+      } catch {
+        return null;
+      }
+    }
+
+    function setUserKeyData(data) {
+      localStorage.setItem("userKeyData", JSON.stringify(data));
+    }
+
+    // Obtener key actual o asignar nueva si expiró
+    function getCurrentKey() {
+      let data = getUserKeyData();
+      const now = Date.now();
+
+      if (data) {
+        // Si la key expiró (más de 3 días)
+        if (now - data.timestamp > keyDuration) {
+          // Avanzar a la siguiente key (circular)
+          let newIndex = (data.index + 1) % keyList.length;
+          data = { index: newIndex, timestamp: now };
+          setUserKeyData(data);
+        }
+      } else {
+        // Si no hay key asignada, asignar la primera
+        data = { index: 0, timestamp: now };
+        setUserKeyData(data);
+      }
+
+      return {
+        key: keyList[data.index],
+        timestamp: data.timestamp
+      };
+    }
+
+    // Mostrar la key y el timer
+    function showKeyAndTimer() {
+      const keyInfo = getCurrentKey();
+      const keyBox = document.getElementById("keyBox");
+      const timerBox = document.getElementById("timer");
+
+      keyBox.innerText = keyInfo.key;
+
+      function updateTimer() {
+        const now = Date.now();
+        const timeLeft = keyDuration - (now - keyInfo.timestamp);
+
+        if (timeLeft <= 0) {
+          // La key expiró, recarga la página para actualizar
+          location.reload();
+          return;
+        }
+
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+        timerBox.innerText = `Key changes in: ${hours}h ${minutes}m ${seconds}s`;
+      }
+
+      updateTimer();
+      setInterval(updateTimer, 1000);
     }
 
     function copyKey() {
@@ -99,8 +181,7 @@
       });
     }
 
-    // Mostrar la clave
-    document.getElementById("keyBox").innerText = getKey();
+    showKeyAndTimer();
   </script>
 </body>
 </html>
