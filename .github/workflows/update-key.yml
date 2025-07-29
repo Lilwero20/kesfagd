@@ -1,0 +1,48 @@
+name: Actualizar Key Automáticamente
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # Chequea cada 10 minutos
+  workflow_dispatch:  # Permite ejecución manual
+
+jobs:
+  monitor-key:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Obtener HTML de la página
+        run: |
+          curl -s https://lilwero20.github.io/kesfagd/ > page.html
+
+      - name: Extraer key del HTML
+        id: extract-key
+        run: |
+          KEY=$(grep -oP 'WERO-\w{12}' page.html | head -1)
+          echo "KEY_ENCONTRADA=$KEY" >> $GITHUB_ENV
+          echo "Key extraída: $KEY"
+
+      - name: Actualizar key.txt si es diferente
+        run: |
+          if [ -f "key.txt" ]; then
+            CURRENT_KEY=$(cat key.txt)
+          else
+            CURRENT_KEY=""
+          fi
+
+          if [ "$CURRENT_KEY" != "$KEY_ENCONTRADA" ]; then
+            echo "$KEY_ENCONTRADA" > key.txt
+            echo "✅ Key actualizada a: $KEY_ENCONTRADA"
+            
+            # Configurar Git
+            git config --global user.name "GitHub Actions"
+            git config --global user.email "actions@github.com"
+            
+            # Hacer commit
+            git add key.txt
+            git commit -m "🔄 Actualización automática de key: $KEY_ENCONTRADA"
+            git push
+          else
+            echo "🔄 La key no ha cambiado"
+          fi
