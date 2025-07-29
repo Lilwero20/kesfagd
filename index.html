@@ -189,14 +189,35 @@
     // Configuración
     const KEY_COUNT = 1000;
     const ROTATION_DAYS = 3;
-    const START_DATE = new Date("2023-01-01T00:00:00"); // Fecha de inicio fija
+    const THREE_DAYS_MS = ROTATION_DAYS * 24 * 60 * 60 * 1000;
 
-    // Generador de claves
+    // Sistema de persistencia
+    function initKeySystem() {
+      if (!localStorage.getItem('weroKeyStart')) {
+        localStorage.setItem('weroKeyStart', Date.now());
+      }
+      
+      const savedData = JSON.parse(localStorage.getItem('weroKeyData') || '{}');
+      
+      if (!savedData.currentKey || (Date.now() - savedData.startTime) >= THREE_DAYS_MS) {
+        // Rotar clave si ha pasado el tiempo
+        const newKeyIndex = savedData.keyIndex ? (savedData.keyIndex + 1) % KEY_COUNT : 0;
+        const newKey = generateKeys()[newKeyIndex];
+        
+        localStorage.setItem('weroKeyData', JSON.stringify({
+          currentKey: newKey,
+          keyIndex: newKeyIndex,
+          startTime: Date.now()
+        }));
+      }
+    }
+
+    // Generador de claves (igual que antes)
     function generateKeys() {
       const keys = [];
       const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      const rng = new Math.seedrandom('wero-seed'); // Semilla fija para claves consistentes
-
+      const rng = new Math.seedrandom('wero-seed');
+      
       for (let i = 0; i < KEY_COUNT; i++) {
         let key = "WERO-";
         for (let j = 0; j < 12; j++) {
@@ -207,23 +228,18 @@
       return keys;
     }
 
-    // Calcula la clave actual basada en la fecha
-    function getCurrentKey() {
-      const now = new Date();
-      const elapsed = now - START_DATE;
-      const daysPassed = Math.floor(elapsed / (1000 * 60 * 60 * 24));
-      const keyIndex = Math.floor(daysPassed / ROTATION_DAYS) % KEY_COUNT;
-      
-      const nextRotation = new Date(START_DATE);
-      nextRotation.setDate(START_DATE.getDate() + (keyIndex + 1) * ROTATION_DAYS);
+    // Obtener datos actuales
+    function getCurrentKeyData() {
+      const savedData = JSON.parse(localStorage.getItem('weroKeyData'));
+      const remaining = THREE_DAYS_MS - (Date.now() - savedData.startTime);
       
       return {
-        key: generateKeys()[keyIndex],
-        remaining: nextRotation - now
+        key: savedData.currentKey,
+        remaining: remaining > 0 ? remaining : 0
       };
     }
 
-    // Formatea el tiempo restante
+    // Formatear tiempo (igual que antes)
     function formatTime(ms) {
       const days = Math.floor(ms / (1000 * 60 * 60 * 24));
       const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -233,18 +249,19 @@
       return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 
-    // Actualiza la interfaz
+    // Actualizar interfaz
     function updateDisplay() {
-      const {key, remaining} = getCurrentKey();
+      const {key, remaining} = getCurrentKeyData();
       document.getElementById("keyOutput").textContent = key;
       document.getElementById("timeRemaining").textContent = formatTime(remaining);
       
       if (remaining <= 0) {
+        initKeySystem(); // Forzar rotación
         setTimeout(() => location.reload(), 1000);
       }
     }
 
-    // Crear estrellas decorativas
+    // Resto del código (estrellas, copiar, etc.) igual que antes
     function createStars() {
       const starsContainer = document.getElementById("stars");
       const starCount = 50;
@@ -266,7 +283,6 @@
       }
     }
 
-    // Copiar al portapapeles
     document.getElementById("copyBtn").addEventListener("click", () => {
       const key = document.getElementById("keyOutput").textContent;
       navigator.clipboard.writeText(key).then(() => {
@@ -279,9 +295,10 @@
     });
 
     // Inicialización
+    initKeySystem();
     createStars();
     updateDisplay();
-    setInterval(updateDisplay, 1000); // Actualiza cada segundo
+    setInterval(updateDisplay, 1000);
   </script>
 </body>
 </html>
