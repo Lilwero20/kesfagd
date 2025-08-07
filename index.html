@@ -101,10 +101,82 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(155, 89, 182, 0.6);
     }
+    
+    /* Estilos para el modal de advertencia */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .modal-content {
+      background: linear-gradient(145deg, #2c3e50, #1a1a1a);
+      padding: 2rem;
+      border-radius: 16px;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      border: 1px solid var(--primary);
+      box-shadow: 0 0 30px rgba(155, 89, 182, 0.5);
+    }
+    
+    .modal-title {
+      color: #e74c3c;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .modal-message {
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+    
+    .modal-btn {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+      border: none;
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      border-radius: 30px;
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+    }
+    
+    .modal-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+    }
+    
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+  <!-- Modal de advertencia -->
+  <div id="bypassModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h2 class="modal-title">¡ACCESO NO AUTORIZADO!</h2>
+      <p class="modal-message">
+        Hemos detectado que intentaste acceder directamente sin pasar por Linkvertise.<br><br>
+        Para obtener tu clave, por favor completa el proceso en Linkvertise. Esto nos ayuda a mantener el servicio gratuito.
+      </p>
+      <button id="redirectBtn" class="modal-btn">OBTENER CLAVE (Linkvertise)</button>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="container" id="mainContent">
     <div class="card">
       <h1>GENERADOR DE CLAVES WERO</h1>
       <div class="key-display" id="keyOutput">Cargando...</div>
@@ -114,29 +186,73 @@
   </div>
 
   <script>
+    // Verificar si el usuario viene de Linkvertise
+    function checkReferrer() {
+      const linkvertiseDomains = [
+        'linkvertise.com',
+        'direct-link.net',
+        'rekonsise.com'
+      ];
+      
+      // Verificar el referer
+      const referrer = document.referrer.toLowerCase();
+      const cameFromLinkvertise = linkvertiseDomains.some(domain => referrer.includes(domain));
+      
+      // Verificar parámetro en URL (para cuando Linkvertise redirige)
+      const urlParams = new URLSearchParams(window.location.search);
+      const linkvertiseParam = urlParams.get('lv');
+      
+      // Si no viene de Linkvertise y no tiene el parámetro, mostrar advertencia
+      if (!cameFromLinkvertise && linkvertiseParam !== 'true') {
+        // Guardar en localStorage que intentó bypass (para no mostrar siempre el modal)
+        const bypassAttempts = localStorage.getItem('bypassAttempts') || 0;
+        localStorage.setItem('bypassAttempts', parseInt(bypassAttempts) + 1);
+        
+        // Mostrar modal de advertencia
+        document.getElementById('bypassModal').classList.remove('hidden');
+        document.getElementById('mainContent').classList.add('hidden');
+        
+        return false;
+      }
+      
+      // Si pasó por Linkvertise, agregar parámetro a la URL para futuras visitas
+      if (cameFromLinkvertise && !linkvertiseParam) {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('lv', 'true');
+        window.history.replaceState({}, '', newUrl);
+      }
+      
+      return true;
+    }
+    
+    // Redirigir a Linkvertise
+    document.getElementById('redirectBtn').addEventListener('click', function() {
+      window.location.href = 'https://direct-link.net/1371356/cIs1B4gbtyDi';
+    });
+    
     // Lista predefinida de claves en orden
     const KEY_SEQUENCE = [
-  "WERO-K7L9M3Z2XV",
-  "WERO-8ND4A1QWJZ",
-  "WERO-Z3T7Y9LCMB",
-  "WERO-PL8XQ2RKJE",
-  "WERO-Y5WZMN1VTC",
-  "WERO-UX3KJ49LEA",
-  "WERO-29CMYQRLVB",
-  "WERO-H1J8EX2WTG",
-  "WERO-V6FZKMLUQP",
-  "WERO-TZ94W1ENMB",
-  "WERO-Q1X8M7DPAK",
-  "WERO-R9T2CVNZLX",
-  "WERO-B7H4YKJQMA",
-  "WERO-G6L2TZXMNP",
-  "WERO-X3W9VDTYLU",
-  "WERO-M2C8JQKZER",
-  "WERO-F8X1VYLBPN",
-  "WERO-A4K7UMDZQJ",
-  "WERO-J6TZPDMWXA",
-  "WERO-N3VBXQLWYT"
-];
+      "WERO-K7L9M3Z2XV",
+      "WERO-8ND4A1QWJZ",
+      "WERO-Z3T7Y9LCMB",
+      "WERO-PL8XQ2RKJE",
+      "WERO-Y5WZMN1VTC",
+      "WERO-UX3KJ49LEA",
+      "WERO-29CMYQRLVB",
+      "WERO-H1J8EX2WTG",
+      "WERO-V6FZKMLUQP",
+      "WERO-TZ94W1ENMB",
+      "WERO-Q1X8M7DPAK",
+      "WERO-R9T2CVNZLX",
+      "WERO-B7H4YKJQMA",
+      "WERO-G6L2TZXMNP",
+      "WERO-X3W9VDTYLU",
+      "WERO-M2C8JQKZER",
+      "WERO-F8X1VYLBPN",
+      "WERO-A4K7UMDZQJ",
+      "WERO-J6TZPDMWXA",
+      "WERO-N3VBXQLWYT"
+    ];
 
     // Duración de cada clave (3 días en milisegundos)
     const KEY_DURATION = 3 * 24 * 60 * 60 * 1000;
@@ -204,9 +320,10 @@
       });
     });
 
-    // Iniciar
-    updateDisplay();
+    // Iniciar solo si pasó por Linkvertise
+    if (checkReferrer()) {
+      updateDisplay();
+    }
   </script>
 </body>
 </html>
-
