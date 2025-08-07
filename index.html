@@ -101,9 +101,9 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(155, 89, 182, 0.6);
     }
-    
-    /* Estilos para el modal de advertencia */
-    .modal-overlay {
+
+    /* Estilos para el modal de seguridad */
+    .security-modal {
       position: fixed;
       top: 0;
       left: 0;
@@ -116,7 +116,7 @@
       z-index: 1000;
     }
     
-    .modal-content {
+    .security-content {
       background: linear-gradient(145deg, #2c3e50, #1a1a1a);
       padding: 2rem;
       border-radius: 16px;
@@ -127,19 +127,19 @@
       box-shadow: 0 0 30px rgba(155, 89, 182, 0.5);
     }
     
-    .modal-title {
+    .security-title {
       color: #e74c3c;
       font-family: 'Orbitron', sans-serif;
       font-size: 1.5rem;
       margin-bottom: 1rem;
     }
     
-    .modal-message {
+    .security-message {
       margin-bottom: 1.5rem;
       line-height: 1.6;
     }
     
-    .modal-btn {
+    .security-btn {
       background: linear-gradient(135deg, #e74c3c, #c0392b);
       color: white;
       border: none;
@@ -152,7 +152,7 @@
       transition: all 0.3s ease;
     }
     
-    .modal-btn:hover {
+    .security-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
     }
@@ -161,17 +161,19 @@
       display: none;
     }
   </style>
+  <!-- Librería CryptoJS para hashing seguro -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 <body>
-  <!-- Modal de advertencia -->
-  <div id="bypassModal" class="modal-overlay hidden">
-    <div class="modal-content">
-      <h2 class="modal-title">¡ACCESO NO AUTORIZADO!</h2>
-      <p class="modal-message">
-        Hemos detectado que intentaste acceder directamente sin pasar por Linkvertise.<br><br>
-        Para obtener tu clave, por favor completa el proceso en Linkvertise. Esto nos ayuda a mantener el servicio gratuito.
+  <!-- Modal de seguridad -->
+  <div id="securityModal" class="security-modal hidden">
+    <div class="security-content">
+      <h2 class="security-title">¡ACCESO NO AUTORIZADO!</h2>
+      <p class="security-message">
+        Hemos detectado un intento de acceso no válido.<br><br>
+        Para obtener tu clave, por favor usa el enlace oficial de Linkvertise.
       </p>
-      <button id="redirectBtn" class="modal-btn">OBTENER CLAVE (Linkvertise)</button>
+      <button id="securityRedirectBtn" class="security-btn">OBTENER CLAVE</button>
     </div>
   </div>
 
@@ -186,51 +188,46 @@
   </div>
 
   <script>
-    // Verificar si el usuario viene de Linkvertise
-    function checkReferrer() {
-      const linkvertiseDomains = [
-        'linkvertise.com',
-        'direct-link.net',
-        'rekonsise.com'
-      ];
+    // Configuración de seguridad
+    const SECURITY_SEED = "WERO_SECURE_" + new Date().getFullYear();
+    const LINKVERTISE_URL = "https://direct-link.net/1371356/cIs1B4gbtyDi";
+    const CURRENT_KEY_VERSION = "v3"; // Cambia esto cuando actualices las keys
+
+    // Generar token único por usuario y sesión
+    function generateAccessToken() {
+      const timestamp = Date.now();
+      const userFingerprint = CryptoJS.SHA256(
+        navigator.userAgent + 
+        screen.width + 
+        screen.height + 
+        navigator.language +
+        SECURITY_SEED
+      ).toString();
       
-      // Verificar el referer
-      const referrer = document.referrer.toLowerCase();
-      const cameFromLinkvertise = linkvertiseDomains.some(domain => referrer.includes(domain));
+      return btoa(
+        CURRENT_KEY_VERSION + "|" + 
+        timestamp + "|" + 
+        userFingerprint.substring(0, 16)
+      ).replace(/=/g, '');
+    }
+
+    // Verificar token de acceso
+    function verifyAccessToken(token) {
+      if (!token) return false;
       
-      // Verificar parámetro en URL (para cuando Linkvertise redirige)
-      const urlParams = new URLSearchParams(window.location.search);
-      const linkvertiseParam = urlParams.get('lv');
-      
-      // Si no viene de Linkvertise y no tiene el parámetro, mostrar advertencia
-      if (!cameFromLinkvertise && linkvertiseParam !== 'true') {
-        // Guardar en localStorage que intentó bypass (para no mostrar siempre el modal)
-        const bypassAttempts = localStorage.getItem('bypassAttempts') || 0;
-        localStorage.setItem('bypassAttempts', parseInt(bypassAttempts) + 1);
+      try {
+        const decoded = atob(token);
+        const [version, timestamp, fingerprint] = decoded.split("|");
         
-        // Mostrar modal de advertencia
-        document.getElementById('bypassModal').classList.remove('hidden');
-        document.getElementById('mainContent').classList.add('hidden');
-        
+        // Verificar versión y tiempo de vida (24 horas)
+        return version === CURRENT_KEY_VERSION && 
+               Date.now() - parseInt(timestamp) < 86400000;
+      } catch (e) {
         return false;
       }
-      
-      // Si pasó por Linkvertise, agregar parámetro a la URL para futuras visitas
-      if (cameFromLinkvertise && !linkvertiseParam) {
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.set('lv', 'true');
-        window.history.replaceState({}, '', newUrl);
-      }
-      
-      return true;
     }
-    
-    // Redirigir a Linkvertise
-    document.getElementById('redirectBtn').addEventListener('click', function() {
-      window.location.href = 'https://direct-link.net/1371356/cIs1B4gbtyDi';
-    });
-    
-    // Lista predefinida de claves en orden
+
+    // Lista de claves
     const KEY_SEQUENCE = [
       "WERO-K7L9M3Z2XV",
       "WERO-8ND4A1QWJZ",
@@ -254,19 +251,15 @@
       "WERO-N3VBXQLWYT"
     ];
 
-    // Duración de cada clave (3 días en milisegundos)
-    const KEY_DURATION = 3 * 24 * 60 * 60 * 1000;
+    // Configuración de rotación
+    const KEY_DURATION = 3 * 24 * 60 * 60 * 1000; // 3 días
+    const START_DATE = new Date(2025, 6, 29, 5, 16, 0).getTime();
 
-    // Fecha de inicio fija (ajusta esta fecha a cuando quieres que comience la primera clave)
-    // Formato: Año, Mes-1, Día, Hora, Minuto, Segundo
-    const START_DATE = new Date(2025, 6, 29, 5, 16, 0).getTime(); // 1 de Noviembre 2023, 00:00:00
-
-    // Obtener la clave actual basada en el tiempo
+    // Obtener clave actual
     function getCurrentKey() {
       const now = Date.now();
       const timePassed = now - START_DATE;
       
-      // Si el tiempo es anterior a START_DATE, usar la primera clave
       if (timePassed < 0) {
         return {
           key: KEY_SEQUENCE[0],
@@ -280,11 +273,12 @@
       
       return {
         key: KEY_SEQUENCE[keyIndex],
-        remaining: remaining
+        remaining: remaining,
+        keyIndex: keyIndex
       };
     }
 
-    // Formatear tiempo restante
+    // Formatear tiempo
     function formatTime(ms) {
       if (ms <= 0) return "00:00:00";
       
@@ -296,33 +290,61 @@
       return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 
-    // Actualizar la interfaz
+    // Verificar acceso válido
+    function checkAccess() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const accessToken = urlParams.get('token');
+      
+      // Verificar referer o token
+      const referrer = document.referrer.toLowerCase();
+      const validReferrers = ['linkvertise.com', 'direct-link.net', 'rekonsise.com'];
+      const cameFromValidSource = validReferrers.some(domain => referrer.includes(domain));
+      
+      if (cameFromValidSource) {
+        // Generar nuevo token válido
+        const newToken = generateAccessToken();
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('token', newToken);
+        window.history.replaceState({}, '', newUrl);
+        return true;
+      }
+      
+      return verifyAccessToken(accessToken);
+    }
+
+    // Redirigir a Linkvertise
+    document.getElementById('securityRedirectBtn').addEventListener('click', function() {
+      // Generar URL con token único
+      const token = generateAccessToken();
+      window.location.href = `${LINKVERTISE_URL}?redirect=${encodeURIComponent(window.location.origin + window.location.pathname + '?token=' + token)}`;
+    });
+
+    // Actualizar interfaz
     function updateDisplay() {
       const {key, remaining} = getCurrentKey();
       
       document.getElementById("keyOutput").textContent = key;
       document.getElementById("timeRemaining").textContent = formatTime(remaining);
       
-      // Actualizar más rápido cuando esté cerca de rotar
-      const refreshTime = remaining < 60000 ? 1000 : 30000;
-      setTimeout(updateDisplay, refreshTime);
+      setTimeout(updateDisplay, remaining < 60000 ? 1000 : 30000);
     }
 
-    // Copiar clave al portapapeles
+    // Copiar clave
     document.getElementById("copyBtn").addEventListener("click", () => {
       const key = document.getElementById("keyOutput").textContent;
       navigator.clipboard.writeText(key).then(() => {
         const btn = document.getElementById("copyBtn");
         btn.textContent = "¡Copiada!";
-        setTimeout(() => {
-          btn.textContent = "Copiar Clave";
-        }, 2000);
+        setTimeout(() => btn.textContent = "Copiar Clave", 2000);
       });
     });
 
-    // Iniciar solo si pasó por Linkvertise
-    if (checkReferrer()) {
+    // Iniciar
+    if (checkAccess()) {
       updateDisplay();
+    } else {
+      document.getElementById('securityModal').classList.remove('hidden');
+      document.getElementById('mainContent').classList.add('hidden');
     }
   </script>
 </body>
