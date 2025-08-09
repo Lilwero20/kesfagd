@@ -210,7 +210,7 @@
     // Configuración de seguridad
     const SECURITY_SEED = "WERO_SECURE_" + new Date().getFullYear();
     const LINKVERTISE_URL = "https://direct-link.net/1371356/cIs1B4gbtyDi";
-    const LOOTLABS_URL = "https://lootdest.org/s?DQF2XDU1";
+    const LOOTLABS_URL = "https://loot-link.com/s?ZRfdAVV8";
     const CURRENT_KEY_VERSION = "v3"; // Cambia esto cuando actualices las keys
 
     // Generar token único por usuario y sesión
@@ -339,11 +339,16 @@
       window.location.href = `${LINKVERTISE_URL}?redirect=${encodeURIComponent(window.location.origin + window.location.pathname + '?token=' + token)}`;
     });
 
-    // Redirigir a LootLabs
+    // Redirigir a LootLabs (versión simplificada que va directamente al enlace)
     document.getElementById('lootlabsRedirectBtn').addEventListener('click', function() {
-      // Generar URL con token único
+      // Generar token de acceso primero
       const token = generateAccessToken();
-      window.location.href = `${LOOTLABS_URL}?redirect=${encodeURIComponent(window.location.origin + window.location.pathname + '?token=' + token)}`;
+      // Guardar el token en la URL actual para cuando regrese
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('token', token);
+      window.history.replaceState({}, '', newUrl);
+      // Redirigir directamente al enlace de LootLabs
+      window.location.href = LOOTLABS_URL;
     });
 
     // Actualizar interfaz
