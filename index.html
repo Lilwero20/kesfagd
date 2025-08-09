@@ -210,7 +210,7 @@
     // Configuración de seguridad
     const SECURITY_SEED = "WERO_SECURE_" + new Date().getFullYear();
     const LINKVERTISE_URL = "https://direct-link.net/1371356/cIs1B4gbtyDi";
-    const LOOTLABS_URL = "https://loot-link.com/s?ZRfdAVV8";
+    const LOOTLABS_URL = "https://lootdest.org/s?Ry5fWm3R";
     const CURRENT_KEY_VERSION = "v3"; // Cambia esto cuando actualices las keys
 
     // Generar token único por usuario y sesión
@@ -317,7 +317,7 @@
       
       // Verificar referer o token
       const referrer = document.referrer.toLowerCase();
-      const validReferrers = ['linkvertise.com', 'direct-link.net', 'rekonsise.com', 'lootdest.org'];
+      const validReferrers = ['linkvertise.com', 'direct-link.net', 'rekonsise.com', 'loot-link.com'];
       const cameFromValidSource = validReferrers.some(domain => referrer.includes(domain));
       
       if (cameFromValidSource) {
@@ -339,15 +339,8 @@
       window.location.href = `${LINKVERTISE_URL}?redirect=${encodeURIComponent(window.location.origin + window.location.pathname + '?token=' + token)}`;
     });
 
-    // Redirigir a LootLabs (versión simplificada que va directamente al enlace)
+    // Redirigir a LootLabs (sin generar token, solo redirige)
     document.getElementById('lootlabsRedirectBtn').addEventListener('click', function() {
-      // Generar token de acceso primero
-      const token = generateAccessToken();
-      // Guardar el token en la URL actual para cuando regrese
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.set('token', token);
-      window.history.replaceState({}, '', newUrl);
-      // Redirigir directamente al enlace de LootLabs
       window.location.href = LOOTLABS_URL;
     });
 
