@@ -12,6 +12,7 @@
       --darker: #121212;
       --light: #ecf0f1;
       --gray: #2c3e50;
+      --purple: #8e44ad;
     }
     
     body {
@@ -150,11 +151,26 @@
       font-family: 'Orbitron', sans-serif;
       letter-spacing: 1px;
       transition: all 0.3s ease;
+      margin: 0.5rem;
     }
     
     .security-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+    }
+
+    .security-btn.purple {
+      background: linear-gradient(135deg, var(--purple), #6c3483);
+    }
+    
+    .security-btn.purple:hover {
+      box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4);
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
     }
     
     .hidden {
@@ -168,12 +184,15 @@
   <!-- Modal de seguridad -->
   <div id="securityModal" class="security-modal hidden">
     <div class="security-content">
-      <h2 class="security-title">¡ACCESO NO AUTORIZADO!</h2>
+      <h2 class="security-title">¡CONSIGUE TU KEY!</h2>
       <p class="security-message">
-        Hemos detectado un intento de acceso no válido.<br><br>
-        Para obtener tu clave, por favor usa el enlace oficial de Linkvertise.
+        Hola Bienvenido Al Sistema De Generacion De Keys Wero.<br><br>
+        Para obtener tu clave, por favor usa el enlace oficial de Linkvertise o Lootlabs.
       </p>
-      <button id="securityRedirectBtn" class="security-btn">OBTENER CLAVE</button>
+      <div class="button-container">
+        <button id="securityRedirectBtn" class="security-btn">Get Key(Linkvertise)</button>
+        <button id="lootlabsRedirectBtn" class="security-btn purple">Get Key(LootLabs)</button>
+      </div>
     </div>
   </div>
 
@@ -191,6 +210,7 @@
     // Configuración de seguridad
     const SECURITY_SEED = "WERO_SECURE_" + new Date().getFullYear();
     const LINKVERTISE_URL = "https://direct-link.net/1371356/cIs1B4gbtyDi";
+    const LOOTLABS_URL = "https://lootdest.org/s?DQF2XDU1";
     const CURRENT_KEY_VERSION = "v3"; // Cambia esto cuando actualices las keys
 
     // Generar token único por usuario y sesión
@@ -297,7 +317,7 @@
       
       // Verificar referer o token
       const referrer = document.referrer.toLowerCase();
-      const validReferrers = ['linkvertise.com', 'direct-link.net', 'rekonsise.com'];
+      const validReferrers = ['linkvertise.com', 'direct-link.net', 'rekonsise.com', 'lootdest.org'];
       const cameFromValidSource = validReferrers.some(domain => referrer.includes(domain));
       
       if (cameFromValidSource) {
@@ -317,6 +337,13 @@
       // Generar URL con token único
       const token = generateAccessToken();
       window.location.href = `${LINKVERTISE_URL}?redirect=${encodeURIComponent(window.location.origin + window.location.pathname + '?token=' + token)}`;
+    });
+
+    // Redirigir a LootLabs
+    document.getElementById('lootlabsRedirectBtn').addEventListener('click', function() {
+      // Generar URL con token único
+      const token = generateAccessToken();
+      window.location.href = `${LOOTLABS_URL}?redirect=${encodeURIComponent(window.location.origin + window.location.pathname + '?token=' + token)}`;
     });
 
     // Actualizar interfaz
