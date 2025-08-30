@@ -177,7 +177,6 @@
       display: none;
     }
   </style>
-  <!-- Librería CryptoJS para hashing seguro -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 <body>
@@ -207,13 +206,11 @@
   </div>
 
   <script>
-    // Configuración de seguridad
     const SECURITY_SEED = "WERO_SECURE_" + new Date().getFullYear();
     const LINKVERTISE_URL = "https://direct-link.net/1371356/cIs1B4gbtyDi";
     const LOOTLABS_URL = "https://lootdest.org/s?Ry5fWm3R";
-    const CURRENT_KEY_VERSION = "v3"; // Cambia esto cuando actualices las keys
+    const CURRENT_KEY_VERSION = "v3";
 
-    // Generar token único por usuario y sesión
     function generateAccessToken() {
       const timestamp = Date.now();
       const userFingerprint = CryptoJS.SHA256(
@@ -231,15 +228,11 @@
       ).replace(/=/g, '');
     }
 
-    // Verificar token de acceso
     function verifyAccessToken(token) {
       if (!token) return false;
-      
       try {
         const decoded = atob(token);
-        const [version, timestamp, fingerprint] = decoded.split("|");
-        
-        // Verificar versión y tiempo de vida (24 horas)
+        const [version, timestamp] = decoded.split("|");
         return version === CURRENT_KEY_VERSION && 
                Date.now() - parseInt(timestamp) < 86400000;
       } catch (e) {
@@ -247,109 +240,74 @@
       }
     }
 
-    // Lista de claves
     const KEY_SEQUENCE = [
-      "WERO-K7L9M3Z2XV",
-      "WERO-8ND4A1QWJZ",
-      "WERO-Z3T7Y9LCMB",
-      "WERO-PL8XQ2RKJE",
-      "WERO-Y5WZMN1VTC",
-      "WERO-UX3KJ49LEA",
-      "WERO-29CMYQRLVB",
-      "WERO-H1J8EX2WTG",
-      "WERO-V6FZKMLUQP",
-      "WERO-TZ94W1ENMB",
-      "WERO-T1Y8W7DPUK",
-      "WERO-R9T2CVNZLX",
-      "WERO-B7H4YKJQMA",
-      "WERO-G6L2TZXMNP",
-      "WERO-X3W9VDTYLU",
-      "WERO-M2C8JQKZER",
-      "WERO-F8X1VYLBPN",
-      "WERO-A4K7UMDZQJ",
-      "WERO-J6TZPDMWXA",
-      "WERO-N3VBXQLWYT"
+      "WERO-K7L9M3Z2XV","WERO-8ND4A1QWJZ","WERO-Z3T7Y9LCMB","WERO-PL8XQ2RKJE","WERO-Y5WZMN1VTC",
+      "WERO-UX3KJ49LEA","WERO-29CMYQRLVB","WERO-H1J8EX2WTG","WERO-V6FZKMLUQP","WERO-TZ94W1ENMB",
+      "WERO-T1Y8W7DPUK","WERO-R9T2CVNZLX","WERO-B7H4YKJQMA","WERO-G6L2TZXMNP","WERO-X3W9VDTYLU",
+      "WERO-M2C8JQKZER","WERO-F8X1VYLBPN","WERO-A4K7UMDZQJ","WERO-J6TZPDMWXA","WERO-N3VBXQLWYT"
     ];
 
-    // Configuración de rotación
-    const KEY_DURATION = 3 * 24 * 60 * 60 * 1000; // 3 días
+    const KEY_DURATION = 3 * 24 * 60 * 60 * 1000;
     const START_DATE = new Date(2025, 6, 29, 5, 16, 0).getTime();
 
-    // Obtener clave actual
     function getCurrentKey() {
       const now = Date.now();
       const timePassed = now - START_DATE;
-      
       if (timePassed < 0) {
-        return {
-          key: KEY_SEQUENCE[0],
-          remaining: START_DATE - now
-        };
+        return { key: KEY_SEQUENCE[0], remaining: START_DATE - now };
       }
-      
       const keyIndex = Math.floor(timePassed / KEY_DURATION) % KEY_SEQUENCE.length;
       const nextRotation = START_DATE + ((keyIndex + 1) * KEY_DURATION);
-      const remaining = nextRotation - now;
-      
-      return {
-        key: KEY_SEQUENCE[keyIndex],
-        remaining: remaining,
-        keyIndex: keyIndex
-      };
+      return { key: KEY_SEQUENCE[keyIndex], remaining: nextRotation - now };
     }
 
-    // Formatear tiempo
     function formatTime(ms) {
       if (ms <= 0) return "00:00:00";
-      
       const days = Math.floor(ms / (1000 * 60 * 60 * 24));
       const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((ms % (1000 * 60)) / 1000);
-      
       return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 
-    // Verificar acceso válido
     function checkAccess() {
       const urlParams = new URLSearchParams(window.location.search);
       const accessToken = urlParams.get('token');
-      
-      // Verificar referer o token
       const referrer = document.referrer.toLowerCase();
-      const validReferrers = ['linkvertise.com', 'direct-link.net', 'rekonsise.com', 'loot-link.com'];
+      const validReferrers = [
+        'linkvertise.com','direct-link.net','rekonsise.com',
+        'loot-link.com','lootlabs.io','lootdest.org'
+      ];
       const cameFromValidSource = validReferrers.some(domain => referrer.includes(domain));
-      
       if (cameFromValidSource) {
-        // Generar nuevo token válido
         const newToken = generateAccessToken();
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.set('token', newToken);
         window.history.replaceState({}, '', newUrl);
         return true;
       }
-      
       return verifyAccessToken(accessToken);
     }
 
-    // Redirigir a Linkvertise
+    // Botón Linkvertise
     document.getElementById('securityRedirectBtn').addEventListener('click', function() {
-      // Generar URL con token único
       const token = generateAccessToken();
       window.location.href = `${LINKVERTISE_URL}?redirect=${encodeURIComponent(window.location.origin + window.location.pathname + '?token=' + token)}`;
     });
 
-    // Actualizar interfaz
+    // Botón LootLabs
+    document.getElementById('lootlabsRedirectBtn').addEventListener('click', function() {
+      const token = generateAccessToken();
+      window.location.href = `${LOOTLABS_URL}&redirect=${encodeURIComponent(window.location.origin + window.location.pathname + '?token=' + token)}`;
+    });
+
     function updateDisplay() {
       const {key, remaining} = getCurrentKey();
-      
       document.getElementById("keyOutput").textContent = key;
       document.getElementById("timeRemaining").textContent = formatTime(remaining);
-      
       setTimeout(updateDisplay, remaining < 60000 ? 1000 : 30000);
     }
 
-    // Copiar clave
     document.getElementById("copyBtn").addEventListener("click", () => {
       const key = document.getElementById("keyOutput").textContent;
       navigator.clipboard.writeText(key).then(() => {
@@ -359,7 +317,6 @@
       });
     });
 
-    // Iniciar
     if (checkAccess()) {
       updateDisplay();
     } else {
@@ -369,7 +326,3 @@
   </script>
 </body>
 </html>
-
-
-
-
