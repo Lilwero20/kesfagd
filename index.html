@@ -259,7 +259,7 @@
       "WERO-H1J8EX2WTG",
       "WERO-V6FZKMLUQP",
       "WERO-TZ94W1ENMB",
-      "WERO-T1X8M7DPEK",
+      "WERO-T1Y8W7DPUK",
       "WERO-R9T2CVNZLX",
       "WERO-B7H4YKJQMA",
       "WERO-G6L2TZXMNP",
@@ -339,9 +339,10 @@
       window.location.href = `${LINKVERTISE_URL}?redirect=${encodeURIComponent(window.location.origin + window.location.pathname + '?token=' + token)}`;
     });
 
-    // Redirigir a LootLabs (sin generar token, solo redirige)
-    document.getElementById('lootlabsRedirectBtn').addEventListener('click', function() {
-      window.location.href = LOOTLABS_URL;
+    document.getElementById('securityRedirectBtn').addEventListener('click', function() {
+      // Generar URL con token único
+      const token = generateAccessToken();
+      window.location.href = `${LOOTLABS_URL}?redirect=${encodeURIComponent(window.location.origin + window.location.pathname + '?token=' + token)}`;
     });
 
     // Actualizar interfaz
@@ -374,5 +375,6 @@
   </script>
 </body>
 </html>
+
 
 
