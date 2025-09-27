@@ -255,12 +255,12 @@
       const timePassed = now - START_DATE;
       if (timePassed < 0) {
         return { key: KEY_SEQUENCE[0], remaining: START_DATE - now };
-      }
-      const keyIndex = Math.floor(timePassed / KEY_DURATION) % KEY_SEQUENCE.length;
-      const nextRotation = START_DATE + ((keyIndex + 1) * KEY_DURATION);
-      return { key: KEY_SEQUENCE[keyIndex], remaining: nextRotation - now };
-    }
-
+  }
+    const cyclesPassed = Math.floor(timePassed / KEY_DURATION);
+    const keyIndex = cyclesPassed % KEY_SEQUENCE.length;
+    const nextRotation = START_DATE + ((cyclesPassed + 1) * KEY_DURATION);
+    return { key: KEY_SEQUENCE[keyIndex], remaining: nextRotation - now };
+  }
     function formatTime(ms) {
       if (ms <= 0) return "00:00:00";
       const days = Math.floor(ms / (1000 * 60 * 60 * 24));
@@ -326,6 +326,7 @@
   </script>
 </body>
 </html>
+
 
 
 
