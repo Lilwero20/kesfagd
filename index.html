@@ -247,8 +247,8 @@
       "WERO-M2C8JQKZER","WERO-F8X1VYLBPN","WERO-A4K7UMDZQJ","WERO-J6TZPDMWXA","WERO-N3VBXQLWYT"
     ];
 
-    const KEY_DURATION = 2 * 24 * 60 * 60; // 2 días en segundos
-    const START_DATE = new Date(2025, 9, 26, 11, 38, 0).getTime();
+    const KEY_DURATION = 2 * 24 * 60 * 60 * 1000; // 2 días en segundos
+    const START_DATE = new Date(2025, 6, 29, 5, 16, 0).getTime();
 
     function getCurrentKey() {
       const now = Date.now();
@@ -326,6 +326,7 @@
   </script>
 </body>
 </html>
+
 
 
 
